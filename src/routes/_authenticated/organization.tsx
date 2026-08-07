@@ -33,7 +33,8 @@ type MemberRow = {
   status: string;
   user_id: string;
   joined_at: string;
-  profiles: { full_name: string; email: string } | null;
+  full_name: string;
+  email: string;
 };
 
 function OrganizationPage() {
@@ -48,13 +49,13 @@ function OrganizationPage() {
     queryKey: ["members", orgId],
     enabled: !!orgId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organization_members")
-        .select("id, role, status, user_id, joined_at, profiles(full_name, email)")
-        .eq("organization_id", orgId!)
-        .order("joined_at", { ascending: true });
+      const { data, error } = await supabase.rpc("org_members_detailed", {
+        _org: orgId!,
+      });
+  
       if (error) throw error;
-      return data as unknown as MemberRow[];
+  
+      return data as MemberRow[];
     },
   });
 
@@ -95,13 +96,20 @@ function OrganizationPage() {
       if (!ws) throw new Error("Not ready");
       const code = joinCode.trim().toUpperCase();
       if (!code) throw new Error("Enter a firm code");
-      const { data: org, error } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("firm_code", code)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc(
+        "find_firm_by_code",
+        {
+          _code: code,
+        },
+      );
+      
       if (error) throw error;
-      if (!org) throw new Error("No firm found with that code");
+      
+      const org = data?.[0];
+      
+      if (!org) {
+        throw new Error("No firm found with that code");
+      }
       const { error: joinError } = await supabase.from("organization_members").insert({
         organization_id: org.id,
         user_id: ws.userId,
@@ -249,8 +257,8 @@ function OrganizationPage() {
                     className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
                   >
                     <div>
-                      <p className="text-sm font-medium">{m.profiles?.full_name || "Advocate"}</p>
-                      <p className="text-xs text-muted-foreground">{m.profiles?.email}</p>
+                      <p className="text-sm font-medium">{m.full_name || "Advocate"}</p>
+                      <p className="text-xs text-muted-foreground">{m.email}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -288,10 +296,10 @@ function OrganizationPage() {
                 <li key={m.id} className="flex items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {m.profiles?.full_name || "Advocate"}
+                    {m.full_name || "Advocate"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {m.profiles?.email} · {ROLE_LABELS[m.role] ?? m.role}
+                    {m.email} · {ROLE_LABELS[m.role] ?? m.role}
                     </p>
                   </div>
                   <StatusBadge status={m.status} />
