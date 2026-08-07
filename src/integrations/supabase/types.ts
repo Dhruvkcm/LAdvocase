@@ -51,8 +51,12 @@ export type Database = {
           filing_date: string | null
           id: string
           next_hearing: string | null
+          opposing_advocate_mobile: string | null
+          opposing_advocate_name: string | null
           organization_id: string | null
           owner_id: string
+          reference_advocate_mobile: string | null
+          reference_advocate_name: string | null
           status: Database["public"]["Enums"]["case_status"]
         }
         Insert: {
@@ -66,8 +70,12 @@ export type Database = {
           filing_date?: string | null
           id?: string
           next_hearing?: string | null
+          opposing_advocate_mobile?: string | null
+          opposing_advocate_name?: string | null
           organization_id?: string | null
           owner_id: string
+          reference_advocate_mobile?: string | null
+          reference_advocate_name?: string | null
           status?: Database["public"]["Enums"]["case_status"]
         }
         Update: {
@@ -81,8 +89,12 @@ export type Database = {
           filing_date?: string | null
           id?: string
           next_hearing?: string | null
+          opposing_advocate_mobile?: string | null
+          opposing_advocate_name?: string | null
           organization_id?: string | null
           owner_id?: string
+          reference_advocate_mobile?: string | null
+          reference_advocate_name?: string | null
           status?: Database["public"]["Enums"]["case_status"]
         }
         Relationships: [

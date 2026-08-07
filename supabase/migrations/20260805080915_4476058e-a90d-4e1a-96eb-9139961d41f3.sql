@@ -1,5 +1,5 @@
 
--- profiles
+-- profiles/
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name text NOT NULL DEFAULT '',

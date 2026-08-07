@@ -31,6 +31,13 @@ const empty = {
   case_serial: "",
   case_year: new Date().getFullYear().toString(),
   court_name: "",
+
+  reference_advocate_name: "",
+  reference_advocate_mobile: "",
+
+  opposing_advocate_name: "",
+  opposing_advocate_mobile: "",
+
   filing_date: "",
   next_hearing: "",
   status: "pending",
@@ -76,10 +83,23 @@ export function CaseFormDialog({
       case_serial: caseRecord.case_serial ?? "",
       case_year: caseRecord.case_year?.toString() ?? "",
       court_name: caseRecord.court_name,
-      filing_date: caseRecord.filing_date ?? "",
-      next_hearing: caseRecord.next_hearing ?? "",
-      status: caseRecord.status,
-      description: caseRecord.description,
+
+reference_advocate_name:
+  caseRecord.reference_advocate_name ?? "",
+
+reference_advocate_mobile:
+  caseRecord.reference_advocate_mobile ?? "",
+
+opposing_advocate_name:
+  caseRecord.opposing_advocate_name ?? "",
+
+opposing_advocate_mobile:
+  caseRecord.opposing_advocate_mobile ?? "",
+
+filing_date: caseRecord.filing_date ?? "",
+next_hearing: caseRecord.next_hearing ?? "",
+status: caseRecord.status,
+description: caseRecord.description,
     }
         : { ...empty, client_id: defaultClientId ?? "" },
     );
@@ -99,8 +119,21 @@ export function CaseFormDialog({
         case_serial: form.case_serial.trim(),
         case_year: Number(form.case_year),
         court_name: form.court_name,
-        filing_date: form.filing_date || null,
-        next_hearing: form.next_hearing || null,
+
+reference_advocate_name:
+  form.reference_advocate_name,
+
+reference_advocate_mobile:
+  form.reference_advocate_mobile,
+
+opposing_advocate_name:
+  form.opposing_advocate_name,
+
+opposing_advocate_mobile:
+  form.opposing_advocate_mobile,
+
+filing_date: form.filing_date || null,
+next_hearing: form.next_hearing || null,
         status: form.status as "pending" | "disposed",
         description: form.description,
       };
@@ -260,6 +293,78 @@ export function CaseFormDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+  <Label htmlFor="reference_advocate_name">
+    Ref. Advocate
+  </Label>
+
+  <Input
+    id="reference_advocate_name"
+    value={form.reference_advocate_name}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        reference_advocate_name: e.target.value,
+      })
+    }
+    placeholder="Advocate name"
+  />
+</div>
+
+<div className="grid gap-2">
+  <Label htmlFor="reference_advocate_mobile">
+    Ref. Mobile
+  </Label>
+
+  <Input
+    id="reference_advocate_mobile"
+    type="tel"
+    value={form.reference_advocate_mobile}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        reference_advocate_mobile: e.target.value,
+      })
+    }
+    placeholder="9876543210"
+  />
+</div>
+<div className="grid gap-2">
+  <Label htmlFor="opposing_advocate_name">
+    Opp. Advocate
+  </Label>
+
+  <Input
+    id="opposing_advocate_name"
+    value={form.opposing_advocate_name}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        opposing_advocate_name: e.target.value,
+      })
+    }
+    placeholder="Advocate name"
+  />
+</div>
+
+<div className="grid gap-2">
+  <Label htmlFor="opposing_advocate_mobile">
+    Opp. Mobile
+  </Label>
+
+  <Input
+    id="opposing_advocate_mobile"
+    type="tel"
+    value={form.opposing_advocate_mobile}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        opposing_advocate_mobile: e.target.value,
+      })
+    }
+    placeholder="9876543210"
+  />
+</div>
             <div className="grid gap-2">
               <Label htmlFor="filing_date">Filing date</Label>
               <Input

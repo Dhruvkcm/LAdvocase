@@ -62,7 +62,7 @@ function CaseDetailPage() {
         .eq("id", caseId)
         .maybeSingle();
       if (error) throw error;
-      return data as CaseRow | null;
+      return (data ?? null) as CaseRow | null;
     },
   });
 
@@ -131,10 +131,31 @@ function CaseDetailPage() {
     record.case_year
   )}
 />
-          <Field label="Court" value={record.court_name} />
-          <Field label="Filing date" value={fmt(record.filing_date)} />
-          <Field label="Next hearing" value={fmt(record.next_hearing)} />
-          <Field label="Created" value={fmt(record.created_at)} />
+<Field label="Court" value={record.court_name} />
+
+<Field
+  label="Ref. Advocate"
+  value={record.reference_advocate_name ?? "—"}
+/>
+
+<Field
+  label="Ref. Mobile"
+  value={record.reference_advocate_mobile ?? "—"}
+/>
+
+<Field
+  label="Opp. Advocate"
+  value={record.opposing_advocate_name ?? "—"}
+/>
+
+<Field
+  label="Opp. Mobile"
+  value={record.opposing_advocate_mobile ?? "—"}
+/>
+
+<Field label="Filing date" value={fmt(record.filing_date)} />
+<Field label="Next hearing" value={fmt(record.next_hearing)} />
+<Field label="Created" value={fmt(record.created_at)} />
           <div className="sm:col-span-2 lg:col-span-3">
             <Field label="Description" value={record.description} />
           </div>
