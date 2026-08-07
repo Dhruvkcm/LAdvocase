@@ -27,9 +27,10 @@ import type { Case, Workspace } from "@/lib/workspace";
 
 const empty = {
   client_id: "",
-  case_number: "",
+  case_code: "",
+  case_serial: "",
+  case_year: new Date().getFullYear().toString(),
   court_name: "",
-  case_type: "",
   filing_date: "",
   next_hearing: "",
   status: "pending",
@@ -69,16 +70,17 @@ export function CaseFormDialog({
     if (!open) return;
     setForm(
       caseRecord
-        ? {
-            client_id: caseRecord.client_id,
-            case_number: caseRecord.case_number,
-            court_name: caseRecord.court_name,
-            case_type: caseRecord.case_type,
-            filing_date: caseRecord.filing_date ?? "",
-            next_hearing: caseRecord.next_hearing ?? "",
-            status: caseRecord.status,
-            description: caseRecord.description,
-          }
+  ? {
+      client_id: caseRecord.client_id,
+      case_code: caseRecord.case_code ?? "",
+      case_serial: caseRecord.case_serial ?? "",
+      case_year: caseRecord.case_year?.toString() ?? "",
+      court_name: caseRecord.court_name,
+      filing_date: caseRecord.filing_date ?? "",
+      next_hearing: caseRecord.next_hearing ?? "",
+      status: caseRecord.status,
+      description: caseRecord.description,
+    }
         : { ...empty, client_id: defaultClientId ?? "" },
     );
   }, [open, caseRecord, defaultClientId]);
@@ -86,15 +88,17 @@ export function CaseFormDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!form.client_id) throw new Error("Please select a client");
-      if (!form.case_number.trim()) throw new Error("Case number is required");
+      if (!form.case_code) throw new Error("Please select a case type");
+      if (!form.case_serial.trim()) throw new Error("Case serial number is required");
+      if (!form.case_year) throw new Error("Please select a year");
       if (!form.court_name) throw new Error("Please select a court");
-      if (!form.case_type) throw new Error("Please select a case type");
 
       const payload = {
         client_id: form.client_id,
-        case_number: form.case_number.trim(),
+        case_code: form.case_code,
+        case_serial: form.case_serial.trim(),
+        case_year: Number(form.case_year),
         court_name: form.court_name,
-        case_type: form.case_type,
         filing_date: form.filing_date || null,
         next_hearing: form.next_hearing || null,
         status: form.status as "pending" | "disposed",
@@ -150,15 +154,94 @@ export function CaseFormDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="case_number">Case number</Label>
-              <Input
-                id="case_number"
-                maxLength={80}
-                value={form.case_number}
-                onChange={(e) => setForm({ ...form, case_number: e.target.value })}
-                required
-              />
-            </div>
+  <Label>Case Code</Label>
+  <Select
+    value={form.case_code}
+    onValueChange={(case_code) => setForm({ ...form, case_code })}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select case code" />
+    </SelectTrigger>
+
+    <SelectContent>
+      {CASE_TYPES.map((type) => {
+        const parts = type.split("-");
+        const code = parts[0]!;
+        const label = parts.slice(1).join("-");
+        
+
+        return (
+          <SelectItem
+            key={code}
+            value={code}
+          >
+            {code} — {label}
+          </SelectItem>
+        );
+      })}
+    </SelectContent>
+  </Select>
+</div>
+<div className="grid gap-2">
+  <Label htmlFor="case_serial">
+    Serial Number
+  </Label>
+
+  <Input
+    id="case_serial"
+    value={form.case_serial}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        case_serial: e.target.value,
+      })
+    }
+    placeholder="Example: 46"
+    required
+  />
+</div>
+<div className="grid gap-2">
+  <Label>Year</Label>
+
+  <Select
+    value={form.case_year}
+    onValueChange={(case_year) =>
+      setForm({
+        ...form,
+        case_year,
+      })
+    }
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+
+    <SelectContent>
+      {Array.from(
+        {
+          length:
+            new Date().getFullYear() -
+            1950 +
+            1,
+        },
+        (_, i) => {
+          const year = (
+            new Date().getFullYear() - i
+          ).toString();
+
+          return (
+            <SelectItem
+              key={year}
+              value={year}
+            >
+              {year}
+            </SelectItem>
+          );
+        },
+      )}
+    </SelectContent>
+  </Select>
+</div>
             <div className="grid gap-2">
               <Label>Court name</Label>
               <Select
@@ -172,24 +255,6 @@ export function CaseFormDialog({
                   {COURTS.map((court) => (
                     <SelectItem key={court} value={court}>
                       {court}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Case type</Label>
-              <Select
-                value={form.case_type}
-                onValueChange={(case_type) => setForm({ ...form, case_type })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select case type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CASE_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
                     </SelectItem>
                   ))}
                 </SelectContent>

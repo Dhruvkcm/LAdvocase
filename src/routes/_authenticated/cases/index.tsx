@@ -5,7 +5,8 @@ import { Briefcase, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace, type Case } from "@/lib/workspace";
-import { CASE_STATUSES, CASE_TYPES } from "@/lib/constants";
+import { CASE_STATUSES } from "@/lib/constants";
+import { formatCaseNumber } from "@/lib/case";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -49,7 +50,6 @@ function CasesPage() {
   const queryClient = useQueryClient();
   const [term, setTerm] = useState("");
   const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Case | null>(null);
   const [deleting, setDeleting] = useState<CaseRow | null>(null);
@@ -82,14 +82,21 @@ function CasesPage() {
     const q = term.trim().toLowerCase();
     return cases.filter((c) => {
       if (status !== "all" && c.status !== status) return false;
-      if (type !== "all" && c.case_type !== type) return false;
       if (!q) return true;
-      return [c.case_number, c.court_name, c.clients?.full_name ?? ""]
+      return [
+        formatCaseNumber(
+          c.case_code,
+          c.case_serial,
+          c.case_year,
+        ),
+        c.court_name,
+        c.clients?.full_name ?? "",
+      ]
         .join(" ")
         .toLowerCase()
         .includes(q);
     });
-  }, [cases, term, status, type]);
+  }, [cases, term, status]);
 
   return (
     <div className="space-y-6">
@@ -127,19 +134,6 @@ function CasesPage() {
             {CASE_STATUSES.map((s) => (
               <SelectItem key={s} value={s} className="capitalize">
                 {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger className="w-[10rem]">
-            <SelectValue placeholder="Case type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {CASE_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
               </SelectItem>
             ))}
           </SelectContent>
@@ -191,15 +185,18 @@ function CasesPage() {
               {filtered.map((c) => (
                 <TableRow key={c.id} className="transition-colors hover:bg-muted/60">
                   <TableCell>
-                    <Link
-                      to="/cases/$caseId"
-                      params={{ caseId: c.id }}
-                      className="font-medium underline-offset-4 hover:underline"
-                    >
-                      {c.case_number}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">{c.case_type}</p>
-                  </TableCell>
+  <Link
+    to="/cases/$caseId"
+    params={{ caseId: c.id }}
+    className="font-medium underline-offset-4 hover:underline"
+  >
+    {formatCaseNumber(
+      c.case_code,
+      c.case_serial,
+      c.case_year,
+    )}
+  </Link>
+</TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.clients?.full_name ?? "—"}
                   </TableCell>
@@ -265,7 +262,14 @@ function CasesPage() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete case ${deleting?.case_number ?? ""}?`}
+        title={`Delete case ${deleting
+          ? formatCaseNumber(
+              deleting.case_code,
+              deleting.case_serial,
+              deleting.case_year
+            )
+          : ""
+        }?`}
         description="This permanently removes the case record."
         onConfirm={() => {
           if (deleting) remove.mutate(deleting.id);

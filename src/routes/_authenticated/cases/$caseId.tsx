@@ -11,6 +11,7 @@ import { CaseFormDialog } from "@/components/CaseFormDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCaseNumber } from "@/lib/case";
 
 export const Route = createFileRoute("/_authenticated/cases/$caseId")({
   head: () => ({
@@ -94,8 +95,12 @@ function CaseDetailPage() {
       </Button>
 
       <PageHeader
-        title={record.case_number}
-        description={`${record.case_type} · ${record.court_name}`}
+  title={formatCaseNumber(
+    record.case_code,
+    record.case_serial,
+    record.case_year
+  )}
+  description={record.court_name}
         action={
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4" /> Edit
@@ -118,8 +123,14 @@ function CaseDetailPage() {
 
       <Card className="surface-card">
         <CardContent className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Case number" value={record.case_number} />
-          <Field label="Case type" value={record.case_type} />
+        <Field
+  label="Case Number"
+  value={formatCaseNumber(
+    record.case_code,
+    record.case_serial,
+    record.case_year
+  )}
+/>
           <Field label="Court" value={record.court_name} />
           <Field label="Filing date" value={fmt(record.filing_date)} />
           <Field label="Next hearing" value={fmt(record.next_hearing)} />

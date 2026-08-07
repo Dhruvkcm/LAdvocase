@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Briefcase, CalendarClock, Clock, Plus, Search, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
+import { formatCaseNumber } from "@/lib/case";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,9 +87,18 @@ function DashboardPage() {
         [c.full_name, c.mobile, c.email, c.district].join(" ").toLowerCase().includes(term),
       )
     : [];
-  const matchedCases = term
+    const matchedCases = term
     ? cases.filter((c) =>
-        [c.case_number, c.court_name, c.case_type, c.status, c.clients?.full_name ?? ""]
+        [
+          formatCaseNumber(
+            c.case_code,
+            c.case_serial,
+            c.case_year,
+          ),
+          c.court_name,
+          c.status,
+          c.clients?.full_name ?? "",
+        ]
           .join(" ")
           .toLowerCase()
           .includes(term),
@@ -159,7 +169,13 @@ function DashboardPage() {
                     params={{ caseId: c.id }}
                     className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
                   >
-                    <span className="font-medium">{c.case_number}</span>
+                    <span className="font-medium">
+  {formatCaseNumber(
+    c.case_code,
+    c.case_serial,
+    c.case_year,
+  )}
+</span>
                     <span className="text-muted-foreground">
                       {c.clients?.full_name} · {c.court_name}
                     </span>
@@ -284,7 +300,13 @@ function DashboardPage() {
                       className="block rounded-xl border border-border p-3 transition-shadow hover:shadow-card"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold">{c.case_number}</p>
+                      <p className="text-sm font-semibold">
+  {formatCaseNumber(
+    c.case_code,
+    c.case_serial,
+    c.case_year,
+  )}
+</p>
                         <span className="text-xs font-medium text-muted-foreground">
                           {new Date(c.next_hearing!).toLocaleDateString(undefined, {
                             day: "2-digit",

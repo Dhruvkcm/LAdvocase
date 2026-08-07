@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Briefcase, Pencil, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace, type Client } from "@/lib/workspace";
+import { formatCaseNumber } from "@/lib/case";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -156,13 +157,17 @@ function ClientDetailPage() {
                 {cases.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <Link
-                        to="/cases/$caseId"
-                        params={{ caseId: c.id }}
-                        className="font-medium underline-offset-4 hover:underline"
-                      >
-                        {c.case_number}
-                      </Link>
+                    <Link
+  to="/cases/$caseId"
+  params={{ caseId: c.id }}
+  className="font-medium underline-offset-4 hover:underline"
+>
+  {formatCaseNumber(
+    c.case_code,
+    c.case_serial,
+    c.case_year,
+  )}
+</Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{c.court_name}</TableCell>
                     <TableCell>

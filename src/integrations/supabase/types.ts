@@ -12,12 +12,38 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       cases: {
         Row: {
-          case_number: string
-          case_type: string
+          case_code: string | null
+          case_serial: string | null
+          case_year: number | null
           client_id: string
           court_name: string
           created_at: string
@@ -30,8 +56,9 @@ export type Database = {
           status: Database["public"]["Enums"]["case_status"]
         }
         Insert: {
-          case_number: string
-          case_type: string
+          case_code?: string | null
+          case_serial?: string | null
+          case_year?: number | null
           client_id: string
           court_name: string
           created_at?: string
@@ -44,8 +71,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["case_status"]
         }
         Update: {
-          case_number?: string
-          case_type?: string
+          case_code?: string | null
+          case_serial?: string | null
+          case_year?: number | null
           client_id?: string
           court_name?: string
           created_at?: string
@@ -361,6 +389,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       case_status: ["pending", "disposed"],
