@@ -1,29 +1,164 @@
-# Welcome to your Lovable project
+# Advocase
 
-This project was built with [Lovable](https://lovable.dev).
+Advocase is a modern cloud-based Legal Practice Management platform built for solo advocates, law firms, and legal teams.
 
-## Build with Lovable
+It enables advocates to manage clients, cases, hearings, organizations, and day-to-day legal operations through a secure, scalable, and intuitive web application.
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+---
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## Features
 
-## Development
+### Authentication
+- Secure email/password authentication with Supabase Auth
+- Email verification
+- Protected routes
+- Persistent user sessions
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+### Organization Management
+- Create a law firm (Organization)
+- Generate a unique organization code
+- Join an existing organization using the organization code
+- Owner approval workflow for new members
+- Multi-user organization support
+- Role-based member management
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+### Client Management
+- Add, edit and delete clients
+- Store contact details and district information
+- Client notes
+- Search clients by name, mobile number and district
+- View complete client profile
+- View all cases linked to a client
+
+### Case Management
+- Add, edit and delete cases
+- Associate cases with clients
+- Court details
+- Case type
+- Filing date
+- Next hearing date
+- Case status management
+- Case description
+- Search and filter cases
+- View complete case details
+
+### Dashboard
+- Practice overview
+- Recent clients
+- Recent cases
+- Upcoming hearings
+- Quick actions
+
+### Security
+- Supabase Row Level Security (RLS)
+- Organization-based data isolation
+- Secure authentication middleware
+- Role-based access control
+
+---
+
+## Technology Stack
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- TanStack Router
+- TanStack Query
+- Tailwind CSS
+- shadcn/ui
+- Radix UI
+- Lucide Icons
+
+### Backend
+
+- Supabase
+- PostgreSQL
+- Supabase Authentication
+- Row Level Security (RLS)
+
+---
+
+## Project Structure
+
+```text
+src
+├── components
+├── hooks
+├── integrations
+│   └── supabase
+├── lib
+├── routes
+├── styles
+└── utils
+```
+
+---
+
+## Installation
+
+Clone the repository
+
+```bash
+git clone <repository-url>
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Configure environment variables
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Run the development server
+
+```bash
 npm run dev
 ```
 
-## Built with
+Build for production
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+```bash
+npm run build
+```
+
+Preview production build
+
+```bash
+npm run preview
+```
+
+---
+
+## Roadmap
+
+- Hearing history
+- Document management
+- PDF generation
+- Calendar view
+- Global search
+- AI legal assistant
+- WhatsApp reminders
+- Notification system
+- Billing & subscriptions
+- Mobile optimization
+
+---
+
+## License
+
+Private Project
+
+Copyright © 2026 Advocase.
+All rights reserved.
