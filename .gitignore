@@ -36,3 +36,7 @@ dist-ssr
 .env.local
 .env.*
 !.env.example
+
+# macOS
+.DS_Store
+__MACOSX/
