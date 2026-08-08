@@ -108,10 +108,12 @@ description: caseRecord.description,
   const mutation = useMutation({
     mutationFn: async () => {
       if (!form.client_id) throw new Error("Please select a client");
-      if (!form.case_code) throw new Error("Please select a case type");
+      if (!form.case_code) throw new Error("Please select a case code");
       if (!form.case_serial.trim()) throw new Error("Case serial number is required");
       if (!form.case_year) throw new Error("Please select a year");
       if (!form.court_name) throw new Error("Please select a court");
+      if (!form.filing_date) throw new Error("Please select a filing date");
+      if (!form.next_hearing) throw new Error("Please select the next hearing date");
 
       const payload = {
         client_id: form.client_id,
@@ -230,7 +232,6 @@ next_hearing: form.next_hearing || null,
       })
     }
     placeholder="Example: 46"
-    required
   />
 </div>
 <div className="grid gap-2">
@@ -371,6 +372,7 @@ next_hearing: form.next_hearing || null,
                 id="filing_date"
                 type="date"
                 value={form.filing_date}
+                
                 onChange={(e) => setForm({ ...form, filing_date: e.target.value })}
               />
             </div>
@@ -380,6 +382,7 @@ next_hearing: form.next_hearing || null,
                 id="next_hearing"
                 type="date"
                 value={form.next_hearing}
+                
                 onChange={(e) => setForm({ ...form, next_hearing: e.target.value })}
               />
             </div>

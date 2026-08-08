@@ -38,8 +38,9 @@ function ClientsPage() {
   const queryClient = useQueryClient();
   const [term, setTerm] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Client | null>(null);
-  const [deleting, setDeleting] = useState<Client | null>(null);
+const [editing, setEditing] = useState<Client | null>(null);
+const [deleting, setDeleting] = useState<Client | null>(null);
+const [deletingCaseCount, setDeletingCaseCount] = useState(0);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients", "all"],
@@ -179,13 +180,26 @@ function ClientsPage() {
                         <Pencil className="size-4" />
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Delete client"
-                        onClick={() => setDeleting(client)}
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+  variant="ghost"
+  size="icon"
+  aria-label="Delete client"
+  onClick={async () => {
+    const { count, error } = await supabase
+      .from("cases")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", client.id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setDeletingCaseCount(count ?? 0);
+    setDeleting(client);
+  }}
+>
+  <Trash2 className="size-4 text-destructive" />
+</Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -204,16 +218,30 @@ function ClientsPage() {
         />
       ) : null}
 
-      <ConfirmDialog
-        open={!!deleting}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title={`Delete ${deleting?.full_name ?? "client"}?`}
-        description="This permanently deletes the client and every case linked to them."
-        onConfirm={() => {
-          if (deleting) remove.mutate(deleting.id);
-          setDeleting(null);
-        }}
-      />
+<ConfirmDialog
+  open={!!deleting}
+  onOpenChange={(open) => {
+    if (!open) {
+      setDeleting(null);
+      setDeletingCaseCount(0);
+    }
+  }}
+  title={`Delete ${deleting?.full_name ?? "client"}?`}
+  description={
+    deletingCaseCount > 0
+      ? `${deleting?.full_name ?? "This client"} has ${deletingCaseCount} ${
+          deletingCaseCount === 1 ? "registered case" : "registered cases"
+        }. If you delete this client, ${
+          deletingCaseCount === 1 ? "that case will" : "all of those cases will"
+        } also be permanently deleted. Are you sure you want to continue?`
+      : `Are you sure you want to permanently delete ${deleting?.full_name ?? "this client"}?`
+  }
+  onConfirm={() => {
+    if (deleting) remove.mutate(deleting.id);
+    setDeleting(null);
+    setDeletingCaseCount(0);
+  }}
+/>
     </div>
   );
 }

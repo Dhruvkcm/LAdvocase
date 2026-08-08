@@ -51,17 +51,46 @@ export function ClientFormDialog({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!form.full_name.trim()) throw new Error("Full name is required");
+      const fullName = form.full_name.trim();
+const mobile = form.mobile.trim();
+const email = form.email.trim();
+const district = form.district.trim();
+
+if (!fullName) throw new Error("Full name is required");
+
+if (!/^[A-Za-z ]+$/.test(fullName)) {
+  throw new Error("Full name can contain only letters and spaces");
+}
+
+if (!/^\d{10}$/.test(mobile)) {
+  throw new Error("Mobile number must be exactly 10 digits");
+}
+
+if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  throw new Error("Please enter a valid email address");
+}
+
+if (!district) throw new Error("Please select a district");
       if (client) {
         const { error } = await supabase
           .from("clients")
-          .update({ ...form, full_name: form.full_name.trim() })
+          .update({
+            ...form,
+            full_name: fullName,
+            mobile,
+            email,
+            district,
+          })
           .eq("id", client.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("clients").insert({
+        const { error } = await supabase
+        .from("clients").insert({
           ...form,
-          full_name: form.full_name.trim(),
+          full_name: fullName,
+          mobile,
+          email,
+          district,
           owner_id: workspace.userId,
           organization_id: workspace.organizationId,
         });
@@ -110,7 +139,8 @@ export function ClientFormDialog({
               <Input
                 id="mobile"
                 inputMode="tel"
-                maxLength={20}
+                maxLength={10}
+                required
                 value={form.mobile}
                 onChange={(e) => setForm({ ...form, mobile: e.target.value })}
               />
@@ -121,6 +151,7 @@ export function ClientFormDialog({
                 id="email"
                 type="email"
                 maxLength={255}
+                required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
