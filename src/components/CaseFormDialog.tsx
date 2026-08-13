@@ -144,11 +144,16 @@ next_hearing: form.next_hearing || null,
         const { error } = await supabase.from("cases").update(payload).eq("id", caseRecord.id);
         if (error) throw error;
       } else {
+        const ownerId = workspace.organization
+          ? workspace.organization.owner_id
+          : workspace.userId;
+
         const { error } = await supabase.from("cases").insert({
           ...payload,
-          owner_id: workspace.userId,
+          owner_id: ownerId,
           organization_id: workspace.organizationId,
         });
+
         if (error) throw error;
       }
     },

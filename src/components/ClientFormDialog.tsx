@@ -84,16 +84,22 @@ if (!district) throw new Error("Please select a district");
           .eq("id", client.id);
         if (error) throw error;
       } else {
+        const ownerId = workspace.organization
+          ? workspace.organization.owner_id
+          : workspace.userId;
+
         const { error } = await supabase
-        .from("clients").insert({
-          ...form,
-          full_name: fullName,
-          mobile,
-          email,
-          district,
-          owner_id: workspace.userId,
-          organization_id: workspace.organizationId,
-        });
+          .from("clients")
+          .insert({
+            ...form,
+            full_name: fullName,
+            mobile,
+            email,
+            district,
+            owner_id: ownerId,
+            organization_id: workspace.organizationId,
+          });
+
         if (error) throw error;
       }
     },
