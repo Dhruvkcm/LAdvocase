@@ -15,7 +15,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedOrganizationRouteImport } from './routes/_authenticated/organization'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedSecurityTestRouteImport } from './routes/_authenticated/security-test'
 import { Route as AuthenticatedCasesIndexRouteImport } from './routes/_authenticated/cases/index'
 import { Route as AuthenticatedCasesCaseIdRouteImport } from './routes/_authenticated/cases/$caseId'
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients/index'
@@ -51,12 +50,6 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSecurityTestRoute =
-  AuthenticatedSecurityTestRouteImport.update({
-    id: '/security-test',
-    path: '/security-test',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedCasesIndexRoute = AuthenticatedCasesIndexRouteImport.update({
   id: '/cases/',
   path: '/cases/',
@@ -87,7 +80,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/organization': typeof AuthenticatedOrganizationRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/security-test': typeof AuthenticatedSecurityTestRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/cases/': typeof AuthenticatedCasesIndexRoute
@@ -99,7 +91,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/organization': typeof AuthenticatedOrganizationRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/security-test': typeof AuthenticatedSecurityTestRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/cases': typeof AuthenticatedCasesIndexRoute
@@ -113,7 +104,6 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/organization': typeof AuthenticatedOrganizationRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/security-test': typeof AuthenticatedSecurityTestRoute
   '/_authenticated/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/cases/': typeof AuthenticatedCasesIndexRoute
@@ -127,7 +117,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organization'
     | '/profile'
-    | '/security-test'
     | '/cases/$caseId'
     | '/clients/$clientId'
     | '/cases/'
@@ -139,7 +128,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organization'
     | '/profile'
-    | '/security-test'
     | '/cases/$caseId'
     | '/clients/$clientId'
     | '/cases'
@@ -152,7 +140,6 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/organization'
     | '/_authenticated/profile'
-    | '/_authenticated/security-test'
     | '/_authenticated/cases/$caseId'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/cases/'
@@ -209,13 +196,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/security-test': {
-      id: '/_authenticated/security-test'
-      path: '/security-test'
-      fullPath: '/security-test'
-      preLoaderRoute: typeof AuthenticatedSecurityTestRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/cases/': {
       id: '/_authenticated/cases/'
       path: '/cases'
@@ -251,7 +231,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOrganizationRoute: typeof AuthenticatedOrganizationRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedSecurityTestRoute: typeof AuthenticatedSecurityTestRoute
   AuthenticatedCasesCaseIdRoute: typeof AuthenticatedCasesCaseIdRoute
   AuthenticatedClientsClientIdRoute: typeof AuthenticatedClientsClientIdRoute
   AuthenticatedCasesIndexRoute: typeof AuthenticatedCasesIndexRoute
@@ -262,7 +241,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOrganizationRoute: AuthenticatedOrganizationRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedSecurityTestRoute: AuthenticatedSecurityTestRoute,
   AuthenticatedCasesCaseIdRoute: AuthenticatedCasesCaseIdRoute,
   AuthenticatedClientsClientIdRoute: AuthenticatedClientsClientIdRoute,
   AuthenticatedCasesIndexRoute: AuthenticatedCasesIndexRoute,
