@@ -35,75 +35,121 @@ function DashboardPage() {
   const [caseOpen, setCaseOpen] = useState(false);
 
   const clientsQuery = useQuery({
-    queryKey: ["clients", "all"],
+    queryKey: ["dashboard", "clients"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, count, error } = await supabase
+        .from("clients")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(5);
+  
+      if (error) throw error;
+  
+      return {
+        recent: data ?? [],
+        total: count ?? 0,
+      };
+    },
+  });
+  
+  const casesQuery = useQuery({
+    queryKey: ["dashboard", "cases"],
+    queryFn: async () => {
+      const currentDate = today();
+  
+      const [totalResult, pendingResult, upcomingResult] = await Promise.all([
+        supabase
+          .from("cases")
+          .select("id", { count: "exact", head: true }),
+  
+        supabase
+          .from("cases")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+  
+        supabase
+          .from("cases")
+          .select("*, clients(full_name)", { count: "exact" })
+          .eq("status", "pending")
+          .gte("next_hearing", currentDate)
+          .order("next_hearing", { ascending: true })
+          .limit(5),
+      ]);
+  
+      if (totalResult.error) throw totalResult.error;
+      if (pendingResult.error) throw pendingResult.error;
+      if (upcomingResult.error) throw upcomingResult.error;
+  
+      return {
+        total: totalResult.count ?? 0,
+        pending: pendingResult.count ?? 0,
+        upcoming: upcomingResult.data ?? [],
+        upcomingCount: upcomingResult.count ?? 0,
+      };
+    },
+  });
+
+  const clients = clientsQuery.data?.recent ?? [];
+const cases = casesQuery.data?.upcoming ?? [];
+
+const totalClients = clientsQuery.data?.total ?? 0;
+const totalCases = casesQuery.data?.total ?? 0;
+const pendingCases = casesQuery.data?.pending ?? 0;
+const upcomingCount = casesQuery.data?.upcomingCount ?? 0;
+
+const loading = clientsQuery.isLoading || casesQuery.isLoading;
+
+const upcoming = useMemo(() => cases, [cases]);
+
+const stats = [
+  { label: "Total clients", value: totalClients, icon: Users },
+  { label: "Total cases", value: totalCases, icon: Briefcase },
+  { label: "Upcoming hearings", value: upcomingCount, icon: CalendarClock },
+  {
+    label: "Pending cases",
+    value: pendingCases,
+    icon: Clock,
+  },
+];
+
+const term = query.trim();
+
+const searchQuery = useQuery({
+  queryKey: ["dashboard", "search", term],
+  enabled: term.length > 0,
+  queryFn: async () => {
+    const [clientsResult, casesResult] = await Promise.all([
+      supabase
         .from("clients")
         .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+        .or(
+          `full_name.ilike.%${term}%,mobile.ilike.%${term}%,email.ilike.%${term}%,district.ilike.%${term}%`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(6),
 
-  const casesQuery = useQuery({
-    queryKey: ["cases", "all"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+        supabase
         .from("cases")
         .select("*, clients(full_name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+        .or(
+          `case_code.ilike.%${term}%,case_serial.ilike.%${term}%,court_name.ilike.%${term}%`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(6),
+    ]);
 
-  const clients = clientsQuery.data ?? [];
-  const cases = casesQuery.data ?? [];
-  const loading = clientsQuery.isLoading || casesQuery.isLoading;
+    if (clientsResult.error) throw clientsResult.error;
+    if (casesResult.error) throw casesResult.error;
 
-  const upcoming = useMemo(
-    () =>
-      cases
-        .filter((c) => c.next_hearing && c.next_hearing >= today() && c.status === "pending")
-        .sort((a, b) => (a.next_hearing! < b.next_hearing! ? -1 : 1)),
-    [cases],
-  );
+    return {
+      clients: clientsResult.data ?? [],
+      cases: casesResult.data ?? [],
+    };
+  },
+});
 
-  const stats = [
-    { label: "Total clients", value: clients.length, icon: Users },
-    { label: "Total cases", value: cases.length, icon: Briefcase },
-    { label: "Upcoming hearings", value: upcoming.length, icon: CalendarClock },
-    {
-      label: "Pending cases",
-      value: cases.filter((c) => c.status === "pending").length,
-      icon: Clock,
-    },
-  ];
-
-  const term = query.trim().toLowerCase();
-  const matchedClients = term
-    ? clients.filter((c) =>
-        [c.full_name, c.mobile, c.email, c.district].join(" ").toLowerCase().includes(term),
-      )
-    : [];
-    const matchedCases = term
-    ? cases.filter((c) =>
-        [
-          formatCaseNumber(
-            c.case_code,
-            c.case_serial,
-            c.case_year,
-          ),
-          c.court_name,
-          c.status,
-          c.clients?.full_name ?? "",
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(term),
-      )
-    : [];
+const matchedClients = searchQuery.data?.clients ?? [];
+const matchedCases = searchQuery.data?.cases ?? [];
 
   const firstName = (ws?.profile.full_name || ws?.profile.email || "").split(" ")[0] ?? "";
 
@@ -138,7 +184,7 @@ function DashboardPage() {
           <CardContent className="space-y-6">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Clients ({matchedClients.length})
+              Clients ({matchedClients.length})
               </p>
               <div className="space-y-1">
                 {matchedClients.slice(0, 6).map((c) => (
@@ -249,7 +295,7 @@ function DashboardPage() {
               />
             ) : (
               <ul className="divide-y divide-border">
-                {clients.slice(0, 5).map((c) => (
+                {clients.map((c) => (
                   <li key={c.id}>
                     <Link
                       to="/clients/$clientId"
@@ -292,7 +338,7 @@ function DashboardPage() {
               />
             ) : (
               <ul className="space-y-3">
-                {upcoming.slice(0, 5).map((c) => (
+                {upcoming.map((c) => (
                   <li key={c.id}>
                     <Link
                       to="/cases/$caseId"

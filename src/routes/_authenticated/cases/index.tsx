@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
@@ -54,17 +54,63 @@ function CasesPage() {
   const [editing, setEditing] = useState<Case | null>(null);
   const [deleting, setDeleting] = useState<CaseRow | null>(null);
 
-  const { data: cases = [], isLoading } = useQuery({
-    queryKey: ["cases", "all"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cases")
-        .select("*, clients(full_name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as CaseRow[];
-    },
-  });
+  const PAGE_SIZE = 25;
+
+const [page, setPage] = useState(0);
+
+const { data: casesResult, isLoading } = useQuery({
+  queryKey: ["cases", page, term, status],
+  queryFn: async () => {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const search = term.trim();
+  
+    let query = supabase
+      .from("cases")
+      .select("*, clients(full_name)", { count: "exact" })
+      .order("created_at", { ascending: false });
+  
+      if (status !== "all") {
+        query = query.eq("status", status as Case["status"]);
+      }
+  
+    if (search) {
+      const { data: matchingClients, error: clientSearchError } = await supabase
+        .from("clients")
+        .select("id")
+        .ilike("full_name", `%${search}%`);
+  
+      if (clientSearchError) throw clientSearchError;
+  
+      const clientIds = (matchingClients ?? []).map((client) => client.id);
+  
+      const searchConditions = [
+        `case_code.ilike.%${search}%`,
+        `case_serial.ilike.%${search}%`,
+        `court_name.ilike.%${search}%`,
+      ];
+  
+      if (clientIds.length > 0) {
+        searchConditions.push(`client_id.in.(${clientIds.join(",")})`);
+      }
+  
+      query = query.or(searchConditions.join(","));
+    }
+  
+    const { data, error, count } = await query.range(from, to);
+  
+    if (error) throw error;
+  
+    return {
+      cases: (data ?? []) as CaseRow[],
+      count: count ?? 0,
+    };
+  },
+});
+
+const cases = casesResult?.cases ?? [];
+const totalCases = casesResult?.count ?? 0;
+const totalPages = Math.ceil(totalCases / PAGE_SIZE);
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -78,25 +124,6 @@ function CasesPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const filtered = useMemo(() => {
-    const q = term.trim().toLowerCase();
-    return cases.filter((c) => {
-      if (status !== "all" && c.status !== status) return false;
-      if (!q) return true;
-      return [
-        formatCaseNumber(
-          c.case_code,
-          c.case_serial,
-          c.case_year,
-        ),
-        c.court_name,
-        c.clients?.full_name ?? "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q);
-    });
-  }, [cases, term, status]);
 
   return (
     <div className="space-y-6">
@@ -119,13 +146,23 @@ function CasesPage() {
         <div className="relative min-w-[16rem] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
+  value={term}
+  maxLength={100}
+            onChange={(e) => {
+              setTerm(e.target.value);
+              setPage(0);
+            }}
             placeholder="Search case number, court or client"
             className="pl-9"
           />
         </div>
-        <Select value={status} onValueChange={setStatus}>
+        <Select
+  value={status}
+  onValueChange={(value) => {
+    setStatus(value);
+    setPage(0);
+  }}
+>
           <SelectTrigger className="w-[10rem]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -146,28 +183,32 @@ function CasesPage() {
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : cases.length === 0 ? (
         <EmptyState
-          icon={Briefcase}
-          title={cases.length === 0 ? "No cases yet" : "No matching cases"}
-          description={
-            cases.length === 0
-              ? "Create your first case to start tracking hearings."
-              : "Adjust your filters or search term."
-          }
-          action={
-            cases.length === 0 ? (
-              <Button
-                onClick={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
-              >
-                Add case
-              </Button>
-            ) : undefined
-          }
-        />
+  icon={Briefcase}
+  title={
+    term.trim() || status !== "all"
+      ? "No matching cases"
+      : "No cases yet"
+  }
+  description={
+    term.trim() || status !== "all"
+      ? "Adjust your filters or search term."
+      : "Create your first case to start tracking hearings."
+  }
+  action={
+    !term.trim() && status === "all" ? (
+      <Button
+        onClick={() => {
+          setEditing(null);
+          setFormOpen(true);
+        }}
+      >
+        Add case
+      </Button>
+    ) : undefined
+  }
+/>
       ) : (
         <div className="surface-card overflow-hidden">
           <Table>
@@ -182,7 +223,7 @@ function CasesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((c) => (
+            {cases.map((c) => (
                 <TableRow key={c.id} className="transition-colors hover:bg-muted/60">
                   <TableCell>
   <Link
@@ -246,8 +287,34 @@ function CasesPage() {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </div>
+            </Table>
+
+<div className="flex items-center justify-between border-t px-4 py-3">
+  <p className="text-sm text-muted-foreground">
+    Page {page + 1} of {totalPages}
+  </p>
+
+  <div className="flex gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={page === 0}
+      onClick={() => setPage((current) => current - 1)}
+    >
+      Previous
+    </Button>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={page >= totalPages - 1}
+      onClick={() => setPage((current) => current + 1)}
+    >
+      Next
+    </Button>
+  </div>
+</div>
+</div>
       )}
 
       {ws ? (

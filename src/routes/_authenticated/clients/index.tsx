@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
@@ -42,17 +42,44 @@ const [editing, setEditing] = useState<Client | null>(null);
 const [deleting, setDeleting] = useState<Client | null>(null);
 const [deletingCaseCount, setDeletingCaseCount] = useState(0);
 
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["clients", "all"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+const PAGE_SIZE = 25;
+
+const [page, setPage] = useState(0);
+
+const { data: clientsResult, isLoading } = useQuery({
+  queryKey: ["clients", page, term],
+  queryFn: async () => {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
+      .from("clients")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    const search = term.trim();
+
+    if (search) {
+      query = query.or(
+        `full_name.ilike.%${search}%,mobile.ilike.%${search}%,district.ilike.%${search}%`,
+      );
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      clients: data ?? [],
+      count: count ?? 0,
+    };
+  },
+});
+
+const clients = clientsResult?.clients ?? [];
+const totalClients = clientsResult?.count ?? 0;
+const totalPages = Math.ceil(totalClients / PAGE_SIZE);
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -66,14 +93,6 @@ const [deletingCaseCount, setDeletingCaseCount] = useState(0);
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
-  const filtered = useMemo(() => {
-    const q = term.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) =>
-      [c.full_name, c.mobile, c.district].join(" ").toLowerCase().includes(q),
-    );
-  }, [clients, term]);
 
   return (
     <div className="space-y-6">
@@ -95,8 +114,12 @@ const [deletingCaseCount, setDeletingCaseCount] = useState(0);
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
+  value={term}
+  maxLength={100}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setPage(0);
+          }}
           placeholder="Search by name, mobile or district"
           className="pl-9"
         />
@@ -108,28 +131,28 @@ const [deletingCaseCount, setDeletingCaseCount] = useState(0);
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : clients.length === 0 ? (
         <EmptyState
-          icon={Users}
-          title={clients.length === 0 ? "No clients yet" : "No matching clients"}
-          description={
-            clients.length === 0
-              ? "Add your first client to get started."
-              : "Try a different name, mobile number or district."
-          }
-          action={
-            clients.length === 0 ? (
-              <Button
-                onClick={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
-              >
-                Add client
-              </Button>
-            ) : undefined
-          }
-        />
+  icon={Users}
+  title={term.trim() ? "No matching clients" : "No clients yet"}
+  description={
+    term.trim()
+      ? "Try a different name, mobile number or district."
+      : "Add your first client to get started."
+  }
+  action={
+    !term.trim() ? (
+      <Button
+        onClick={() => {
+          setEditing(null);
+          setFormOpen(true);
+        }}
+      >
+        Add client
+      </Button>
+    ) : undefined
+  }
+/>
       ) : (
         <div className="surface-card overflow-hidden">
           <Table>
@@ -143,7 +166,7 @@ const [deletingCaseCount, setDeletingCaseCount] = useState(0);
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((client) => (
+            {clients.map((client) => (
                 <TableRow key={client.id} className="transition-colors hover:bg-muted/60">
                   <TableCell>
                     <Link
@@ -205,8 +228,34 @@ const [deletingCaseCount, setDeletingCaseCount] = useState(0);
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </div>
+            </Table>
+
+<div className="flex items-center justify-between border-t px-4 py-3">
+  <p className="text-sm text-muted-foreground">
+    Page {page + 1} of {totalPages}
+  </p>
+
+  <div className="flex gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={page === 0}
+      onClick={() => setPage((current) => current - 1)}
+    >
+      Previous
+    </Button>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={page >= totalPages - 1}
+      onClick={() => setPage((current) => current + 1)}
+    >
+      Next
+    </Button>
+  </div>
+</div>
+</div>
       )}
 
       {ws ? (
