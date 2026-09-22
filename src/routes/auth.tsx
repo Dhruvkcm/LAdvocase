@@ -56,22 +56,56 @@ function AuthPage() {
     if (error) toast.error(error.message);
   };
 
-    const signUp = async () => {
+  const signUp = async () => {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName) {
+      toast.error("Enter your full name.");
+      return;
+    }
+
+    if (!trimmedEmail) {
+      toast.error("Enter your email address.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      toast.error("Enter a password.");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: trimmedEmail,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { full_name: fullName },
+        data: { full_name: trimmedName },
       },
     });
+
     setLoading(false);
+
     if (error) {
       toast.error(error.message);
       return;
     }
-    if (!data.session) toast.success("Check your email to confirm your account.");
+
+    if (!data.session) {
+      toast.success("Check your email to confirm your account.");
+    }
   };
 
     const requestPasswordReset = async () => {
@@ -161,14 +195,17 @@ function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reset-password">New password</Label>
+                <Label htmlFor="signup-password">Password</Label>
                 <Input
-                  id="reset-password"
+                  id="signup-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters.
+                </p>
               </div>
 
               <Button className="w-full" onClick={updatePassword} disabled={loading}>
