@@ -163,7 +163,23 @@ next_hearing: form.next_hearing || null,
       toast.success(caseRecord ? "Case updated" : "Case added");
       onOpenChange(false);
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      if (error.message.includes("cases_unique_identity_per_organization")) {
+        toast.error(
+          "This case already exists in your organization with the same case code, serial number, and year.",
+        );
+        return;
+      }
+    
+      if (error.message.includes("cases_unique_identity_per_solo_owner")) {
+        toast.error(
+          "This case already exists in your workspace with the same case code, serial number, and year.",
+        );
+        return;
+      }
+    
+      toast.error(error.message);
+    },
   });
 
   return (
