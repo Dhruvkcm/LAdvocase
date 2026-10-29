@@ -82,7 +82,6 @@ export type Database = {
           description: string
           filing_date: string | null
           id: string
-          next_hearing: string | null
           opposing_advocate_mobile: string | null
           opposing_advocate_name: string | null
           organization_id: string | null
@@ -101,7 +100,6 @@ export type Database = {
           description?: string
           filing_date?: string | null
           id?: string
-          next_hearing?: string | null
           opposing_advocate_mobile?: string | null
           opposing_advocate_name?: string | null
           organization_id?: string | null
@@ -120,7 +118,6 @@ export type Database = {
           description?: string
           filing_date?: string | null
           id?: string
-          next_hearing?: string | null
           opposing_advocate_mobile?: string | null
           opposing_advocate_name?: string | null
           organization_id?: string | null

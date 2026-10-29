@@ -252,7 +252,6 @@ const handleUpdateHearingNote = async (
 />
 
 <Field label="Filing date" value={fmt(record.filing_date)} />
-<Field label="Next hearing" value={fmt(record.next_hearing)} />
 <Field label="Created" value={fmt(record.created_at)} />
           <div className="sm:col-span-2 lg:col-span-3">
             <Field label="Description" value={record.description} />

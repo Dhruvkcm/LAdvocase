@@ -43,7 +43,10 @@ export const Route = createFileRoute("/_authenticated/cases/")({
   component: CasesPage,
 });
 
-type CaseRow = Case & { clients: { full_name: string } | null };
+type CaseRow = Case & {
+  clients: { full_name: string } | null;
+  upcoming_hearing: string | null;
+};
 
 function CasesPage() {
   const { data: ws } = useWorkspace();
@@ -98,13 +101,42 @@ const { data: casesResult, isLoading } = useQuery({
     }
   
     const { data, error, count } = await query.range(from, to);
-  
-    if (error) throw error;
-  
-    return {
-      cases: (data ?? []) as CaseRow[],
-      count: count ?? 0,
-    };
+
+if (error) throw error;
+
+const caseRows = data ?? [];
+const caseIds = caseRows.map((item) => item.id);
+
+let hearingRows: { case_id: string; hearing_date: string }[] = [];
+
+if (caseIds.length > 0) {
+  const { data: hearings, error: hearingError } = await supabase
+    .from("case_hearing_history")
+    .select("case_id, hearing_date")
+    .in("case_id", caseIds)
+
+  if (hearingError) throw hearingError;
+
+  hearingRows = hearings ?? [];
+}
+
+const upcomingByCase = new Map<string, string>();
+
+for (const hearing of hearingRows) {
+  const current = upcomingByCase.get(hearing.case_id);
+
+  if (!current || hearing.hearing_date > current) {
+    upcomingByCase.set(hearing.case_id, hearing.hearing_date);
+  }
+}
+
+return {
+  cases: caseRows.map((item) => ({
+    ...(item as CaseRow),
+    upcoming_hearing: upcomingByCase.get(item.id) ?? null,
+  })),
+  count: count ?? 0,
+};
   },
 });
 
@@ -245,8 +277,8 @@ const totalPages = Math.ceil(totalCases / PAGE_SIZE);
                     {c.court_name}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground lg:table-cell">
-                    {c.next_hearing
-                      ? new Date(c.next_hearing).toLocaleDateString(undefined, {
+                    {c.upcoming_hearing
+                      ? new Date(c.upcoming_hearing).toLocaleDateString(undefined, {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",

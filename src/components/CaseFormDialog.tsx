@@ -39,7 +39,6 @@ const empty = {
   opposing_advocate_mobile: "",
 
   filing_date: "",
-  next_hearing: "",
   status: "pending",
   description: "",
 };
@@ -97,7 +96,6 @@ opposing_advocate_mobile:
   caseRecord.opposing_advocate_mobile ?? "",
 
 filing_date: caseRecord.filing_date ?? "",
-next_hearing: caseRecord.next_hearing ?? "",
 status: caseRecord.status,
 description: caseRecord.description,
     }
@@ -113,7 +111,6 @@ description: caseRecord.description,
       if (!form.case_year) throw new Error("Please select a year");
       if (!form.court_name) throw new Error("Please select a court");
       if (!form.filing_date) throw new Error("Please select a filing date");
-      if (!form.next_hearing) throw new Error("Please select the next hearing date");
 
       const payload = {
         client_id: form.client_id,
@@ -135,7 +132,6 @@ opposing_advocate_mobile:
   form.opposing_advocate_mobile,
 
 filing_date: form.filing_date || null,
-next_hearing: form.next_hearing || null,
         status: form.status as "pending" | "disposed",
         description: form.description,
       };
@@ -170,16 +166,6 @@ next_hearing: form.next_hearing || null,
         savedCaseId = data.id;
       }
 
-      if (!caseRecord || caseRecord.next_hearing !== form.next_hearing) {
-        const { error } = await supabase
-          .from("case_hearing_history")
-          .insert({
-            case_id: savedCaseId,
-            hearing_date: form.next_hearing,
-          });
-
-        if (error) throw error;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
@@ -419,16 +405,6 @@ next_hearing: form.next_hearing || null,
                 value={form.filing_date}
                 
                 onChange={(e) => setForm({ ...form, filing_date: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="next_hearing">Next hearing</Label>
-              <Input
-                id="next_hearing"
-                type="date"
-                value={form.next_hearing}
-                
-                onChange={(e) => setForm({ ...form, next_hearing: e.target.value })}
               />
             </div>
             <div className="grid gap-2">

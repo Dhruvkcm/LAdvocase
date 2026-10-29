@@ -68,23 +68,60 @@ function DashboardPage() {
           .eq("status", "pending"),
   
         supabase
-          .from("cases")
-          .select("*, clients(full_name)", { count: "exact" })
-          .eq("status", "pending")
-          .gte("next_hearing", currentDate)
-          .order("next_hearing", { ascending: true })
-          .limit(5),
+          .from("case_hearing_history")
+          .select("case_id, hearing_date")
+          .gte("hearing_date", currentDate)
+          .order("hearing_date", { ascending: true }),
       ]);
   
       if (totalResult.error) throw totalResult.error;
       if (pendingResult.error) throw pendingResult.error;
       if (upcomingResult.error) throw upcomingResult.error;
   
+      const upcomingHearings = upcomingResult.data ?? [];
+      const nextHearingByCase = new Map<string, string>();
+  
+      for (const hearing of upcomingHearings) {
+        if (!nextHearingByCase.has(hearing.case_id)) {
+          nextHearingByCase.set(hearing.case_id, hearing.hearing_date);
+        }
+      }
+  
+      const caseIds = [...nextHearingByCase.keys()];
+  
+      let upcomingCases: {
+        id: string;
+        hearing_date: string;
+        case_code: string | null;
+        case_serial: string | null;
+        case_year: number | null;
+        court_name: string;
+        clients: { full_name: string } | null;
+      }[] = [];
+      
+      if (caseIds.length > 0) {
+        const { data, error } = await supabase
+          .from("cases")
+          .select("id, case_code, case_serial, case_year, court_name, clients(full_name)")
+          .eq("status", "pending")
+          .in("id", caseIds);
+  
+        if (error) throw error;
+  
+        upcomingCases = (data ?? [])
+          .map((item) => ({
+            ...item,
+            hearing_date: nextHearingByCase.get(item.id)!,
+          }))
+          .sort((a, b) => a.hearing_date.localeCompare(b.hearing_date))
+          .slice(0, 5);
+      }
+  
       return {
         total: totalResult.count ?? 0,
         pending: pendingResult.count ?? 0,
-        upcoming: upcomingResult.data ?? [],
-        upcomingCount: upcomingResult.count ?? 0,
+        upcoming: upcomingCases,
+        upcomingCount: upcomingCases.length,
       };
     },
   });
@@ -354,7 +391,7 @@ const matchedCases = searchQuery.data?.cases ?? [];
   )}
 </p>
                         <span className="text-xs font-medium text-muted-foreground">
-                          {new Date(c.next_hearing!).toLocaleDateString(undefined, {
+                        {new Date(`${c.hearing_date}T00:00:00`).toLocaleDateString(undefined, {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
