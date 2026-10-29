@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, Pencil } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ArrowLeft, Briefcase, Pencil, Plus, CalendarDays, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace, type Case } from "@/lib/workspace";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,6 +13,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCaseNumber } from "@/lib/case";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/cases/$caseId")({
   head: () => ({
@@ -51,7 +63,44 @@ function CaseDetailPage() {
   const { caseId } = Route.useParams();
   const navigate = useNavigate();
   const { data: ws } = useWorkspace();
+  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [addHearingOpen, setAddHearingOpen] = useState(false);
+  const [hearingDate, setHearingDate] = useState("");
+const [hearingNote, setHearingNote] = useState("");
+const [hearingSaving, setHearingSaving] = useState(false);
+const handleAddHearing = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+
+  if (!hearingDate) return;
+
+  setHearingSaving(true);
+
+  try {
+    const { error } = await supabase.from("case_hearing_history").insert({
+      case_id: caseId,
+      hearing_date: hearingDate,
+      hearing_note: hearingNote.trim() || null,
+    });
+
+    if (error) throw error;
+
+    await queryClient.invalidateQueries({
+      queryKey: ["case-hearing-history", caseId],
+    });
+
+    setHearingDate("");
+    setHearingNote("");
+    setAddHearingOpen(false);
+    toast.success("Hearing added");
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : "Failed to add hearing",
+    );
+  } finally {
+    setHearingSaving(false);
+  }
+};
 
   const { data: record, isLoading } = useQuery({
     queryKey: ["case", caseId],
@@ -63,6 +112,20 @@ function CaseDetailPage() {
         .maybeSingle();
       if (error) throw error;
       return (data ?? null) as CaseRow | null;
+    },
+  });
+  const { data: hearingHistory = [], isLoading: historyLoading } = useQuery({
+    queryKey: ["case-hearing-history", caseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("case_hearing_history")
+        .select("id, hearing_date, hearing_note, created_at")
+        .eq("case_id", caseId)
+        .order("hearing_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -161,9 +224,114 @@ function CaseDetailPage() {
           </div>
         </CardContent>
       </Card>
+      <Card className="surface-card">
+        <CardContent className="p-6">
+        <div className="flex items-center justify-between gap-4">
+  <h2 className="text-lg font-semibold text-foreground">
+    Hearing History
+  </h2>
+  <Button onClick={() => setAddHearingOpen(true)}>
+    <Plus className="size-4" />
+    Add Hearing
+  </Button>
+</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Previously scheduled and upcoming hearing dates for this case.
+          </p>
 
-      {ws ? (
-        <CaseFormDialog
+          {historyLoading ? (
+            <div className="mt-4 space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : hearingHistory.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No hearing history recorded yet.
+            </p>
+          ) : (
+            <div className="mt-4 divide-y divide-border">
+              {hearingHistory.map((hearing) => (
+                <div
+                key={hearing.id}
+                className="flex items-start justify-between gap-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {fmt(hearing.hearing_date)}
+                  </p>
+                  {hearing.hearing_note ? (
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {hearing.hearing_note}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No note added
+                    </p>
+                  )}
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  Recorded {fmt(hearing.created_at)}
+                </span>
+              </div>
+              ))}
+            </div>
+                 )}
+                 </CardContent>
+               </Card>
+           
+               <Dialog open={addHearingOpen} onOpenChange={setAddHearingOpen}>
+                 <DialogContent>
+                   <DialogHeader>
+                     <DialogTitle>Add Hearing</DialogTitle>
+                     <DialogDescription>
+                       Record a hearing date and optionally describe what happened or what
+                       needs to happen next.
+                     </DialogDescription>
+                   </DialogHeader>
+           
+                   <form onSubmit={handleAddHearing} className="space-y-4">
+                     <div className="space-y-2">
+                       <Label htmlFor="hearing-date">Hearing date</Label>
+                       <Input
+                         id="hearing-date"
+                         type="date"
+                         value={hearingDate}
+                         onChange={(event) => setHearingDate(event.target.value)}
+                         required
+                       />
+                     </div>
+           
+                     <div className="space-y-2">
+                       <Label htmlFor="hearing-note">Hearing note (optional)</Label>
+                       <Textarea
+                         id="hearing-note"
+                         placeholder="Add hearing observations, orders, or next steps..."
+                         value={hearingNote}
+                         onChange={(event) => setHearingNote(event.target.value)}
+                         rows={4}
+                       />
+                     </div>
+           
+                     <DialogFooter>
+                       <Button
+                         type="button"
+                         variant="outline"
+                         onClick={() => setAddHearingOpen(false)}
+                         disabled={hearingSaving}
+                       >
+                         Cancel
+                       </Button>
+                       <Button type="submit" disabled={hearingSaving || !hearingDate}>
+                         <Save className="size-4" />
+                         {hearingSaving ? "Saving..." : "Save Hearing"}
+                       </Button>
+                     </DialogFooter>
+                   </form>
+                 </DialogContent>
+               </Dialog>
+           
+               {ws ? (
+                 <CaseFormDialog
           open={editOpen}
           onOpenChange={setEditOpen}
           workspace={ws}

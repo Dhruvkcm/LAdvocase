@@ -56,6 +56,29 @@ function AuthPage() {
     if (error) toast.error(error.message);
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    console.log("[Google OAuth] Button clicked");
+  
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+  
+    console.log("[Google OAuth] Result:", {
+      hasUrl: Boolean(data?.url),
+      error: error?.message ?? null,
+    });
+  
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+    }
+  };
+
+
   const signUp = async () => {
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim();
@@ -293,8 +316,27 @@ function AuthPage() {
                 </div>
 
                 <Button className="w-full" onClick={signIn} disabled={loading}>
-                  Sign in
-                </Button>
+  Sign in
+</Button>
+
+<div className="relative py-2">
+  <div className="absolute inset-0 flex items-center">
+    <span className="w-full border-t" />
+  </div>
+  <div className="relative flex justify-center text-xs uppercase">
+    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+  </div>
+</div>
+
+<Button
+  type="button"
+  variant="outline"
+  className="w-full"
+  onClick={signInWithGoogle}
+  disabled={loading}
+>
+  Continue with Google
+</Button>
               </TabsContent>
 
               <TabsContent value="signup" className="mt-6 space-y-4">

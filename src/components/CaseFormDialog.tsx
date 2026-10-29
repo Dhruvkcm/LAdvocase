@@ -140,19 +140,43 @@ next_hearing: form.next_hearing || null,
         description: form.description,
       };
 
+      let savedCaseId: string;
+
       if (caseRecord) {
-        const { error } = await supabase.from("cases").update(payload).eq("id", caseRecord.id);
+        const { error } = await supabase
+          .from("cases")
+          .update(payload)
+          .eq("id", caseRecord.id);
+
         if (error) throw error;
+
+        savedCaseId = caseRecord.id;
       } else {
         const ownerId = workspace.organization
           ? workspace.organization.owner_id
           : workspace.userId;
 
-        const { error } = await supabase.from("cases").insert({
-          ...payload,
-          owner_id: ownerId,
-          organization_id: workspace.organizationId,
-        });
+        const { data, error } = await supabase
+          .from("cases")
+          .insert({
+            ...payload,
+            owner_id: ownerId,
+            organization_id: workspace.organizationId,
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        savedCaseId = data.id;
+      }
+
+      if (!caseRecord || caseRecord.next_hearing !== form.next_hearing) {
+        const { error } = await supabase
+          .from("case_hearing_history")
+          .insert({
+            case_id: savedCaseId,
+            hearing_date: form.next_hearing,
+          });
 
         if (error) throw error;
       }
