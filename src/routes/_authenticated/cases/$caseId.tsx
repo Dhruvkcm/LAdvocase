@@ -69,6 +69,8 @@ function CaseDetailPage() {
   const [hearingDate, setHearingDate] = useState("");
 const [hearingNote, setHearingNote] = useState("");
 const [hearingSaving, setHearingSaving] = useState(false);
+const [editingHearingId, setEditingHearingId] = useState<string | null>(null);
+const [editingHearingNote, setEditingHearingNote] = useState("");
 const handleAddHearing = async (event: React.FormEvent<HTMLFormElement>) => {
   event.preventDefault();
 
@@ -101,7 +103,40 @@ const handleAddHearing = async (event: React.FormEvent<HTMLFormElement>) => {
     setHearingSaving(false);
   }
 };
+const handleUpdateHearingNote = async (
+  event: React.FormEvent<HTMLFormElement>,
+  hearingId: string,
+) => {
+  event.preventDefault();
 
+  setHearingSaving(true);
+
+  try {
+    const { error } = await supabase
+      .from("case_hearing_history")
+      .update({
+        hearing_note: editingHearingNote.trim() || null,
+      })
+      .eq("id", hearingId)
+      .eq("case_id", caseId);
+
+    if (error) throw error;
+
+    await queryClient.invalidateQueries({
+      queryKey: ["case-hearing-history", caseId],
+    });
+
+    setEditingHearingId(null);
+    setEditingHearingNote("");
+    toast.success("Hearing note updated");
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : "Failed to update hearing note",
+    );
+  } finally {
+    setHearingSaving(false);
+  }
+};
   const { data: record, isLoading } = useQuery({
     queryKey: ["case", caseId],
     queryFn: async () => {
@@ -255,20 +290,73 @@ const handleAddHearing = async (event: React.FormEvent<HTMLFormElement>) => {
                 key={hearing.id}
                 className="flex items-start justify-between gap-4 py-3"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {fmt(hearing.hearing_date)}
                   </p>
-                  {hearing.hearing_note ? (
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                      {hearing.hearing_note}
-                    </p>
+              
+                  {editingHearingId === hearing.id ? (
+                    <form
+                      className="mt-3 space-y-3"
+                      onSubmit={(event) => handleUpdateHearingNote(event, hearing.id)}
+                    >
+                      <Textarea
+                        value={editingHearingNote}
+                        onChange={(event) => setEditingHearingNote(event.target.value)}
+                        placeholder="Add hearing observations, orders, or next steps..."
+                        rows={3}
+                        aria-label="Edit hearing note"
+                      />
+              
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={hearingSaving}>
+                          <Save className="size-4" />
+                          {hearingSaving ? "Saving..." : "Save Note"}
+                        </Button>
+              
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={hearingSaving}
+                          onClick={() => {
+                            setEditingHearingId(null);
+                            setEditingHearingNote("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
                   ) : (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      No note added
-                    </p>
+                    <>
+                      {hearing.hearing_note ? (
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                          {hearing.hearing_note}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          No note added
+                        </p>
+                      )}
+              
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 -ml-3"
+                        onClick={() => {
+                          setEditingHearingId(hearing.id);
+                          setEditingHearingNote(hearing.hearing_note ?? "");
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                        Edit Note
+                      </Button>
+                    </>
                   )}
                 </div>
+              
                 <span className="shrink-0 text-xs text-muted-foreground">
                   Recorded {fmt(hearing.created_at)}
                 </span>
